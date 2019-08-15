@@ -1,0 +1,23 @@
+Spark SQL运行原理(参考网络）
+
+1. 使用SessionCatalog保存元数据
+
+在解析SQL语句之前，会创建SparkSession，或者如果是2.0之前的版本初始化SQLContext，SparkSession只是封装了SparkContext和SQLContext的创建而已。会把元数据保存在SessionCatalog中，涉及到表名，字段名称和字段类型。创建临时表或者视图，其实就会往SessionCatalog注册
+
+2. 解析SQL,使用ANTLR生成未绑定的逻辑计划
+
+当调用SparkSession的sql或者SQLContext的sql方法，我们以2.0为准，就会使用SparkSqlParser进行解析SQL. 使用的ANTLR进行词法解析和语法解析。它分为2个步骤来生成Unresolved LogicalPlan：
+
+3. 使用分析器Analyzer绑定逻辑计划
+
+在该阶段，Analyzer会使用Analyzer Rules，并结合SessionCatalog，对未绑定的逻辑计划进行解析，生成已绑定的逻辑计划。
+
+4. 使用优化器Optimizer优化逻辑计划
+
+优化器也是会定义一套Rules，利用这些Rule对逻辑计划和Exepression进行迭代处理，从而使得树的节点进行和并和优化
+
+5. 使用SparkPlanner生成物理计划
+
+SparkSpanner使用Planning Strategies，对优化后的逻辑计划进行转换，生成可以执行的物理计划SparkPlan.
+
+6. 使用QueryExecution执行物理计划
